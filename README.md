@@ -1,96 +1,130 @@
-# WakeDrive 🚗
+# WakeDrive 🚗💤
 
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-[![API](https://img.shields.io/badge/API-24%2B-brightgreen.svg)](https://android-arsenal.com/api?level=24)
-[![Kotlin](https://img.shields.io/badge/kotlin-1.8.0-blue.svg?logo=kotlin)](http://kotlinlang.org)
+<p align="center">
+  <img src="https://img.shields.io/badge/Platform-Android-brightgreen?style=for-the-badge&logo=android" />
+  <img src="https://img.shields.io/badge/Language-Kotlin-blue?style=for-the-badge&logo=kotlin" />
+  <img src="https://img.shields.io/badge/License-Apache%202.0-orange?style=for-the-badge" />
+  <img src="https://img.shields.io/badge/Min%20SDK-24-red?style=for-the-badge" />
+</p>
 
-A real-time Android application that uses machine learning and computer vision to detect driver drowsiness and prevent accidents. The app monitors driver alertness through facial analysis and provides multi-level audio-visual alerts when signs of fatigue are detected.
+<p align="center">
+  <b>Stay awake. Stay alive.</b><br/>
+  WakeDrive is a real-time Android app that uses AI and your phone's front camera to detect driver drowsiness and alert you before it's too late.
+</p>
 
-> **Based on [AlertDrive](https://github.com/Roxonn-FutureTech/AlertDrive) by [Roxonn-FutureTech](https://github.com/Roxonn-FutureTech)**, licensed under Apache 2.0.
+---
 
-## Features 🌟
+## What It Does
 
-- **Real-time Face Detection**: Continuous monitoring of driver's face using ML Kit
-- **Multi-level Drowsiness Detection**:
-  - Eye openness tracking
-  - Head position monitoring
-  - Blink rate analysis
-- **Smart Alert System**:
-  - WARNING: Notification sound with brief vibration
-  - SEVERE: Continuous alarm with extended vibration
-  - CRITICAL: Intensive alarm with pulsing vibration pattern
-- **Session Analytics**: Track and analyze driving patterns
-- **Privacy-Focused**: All processing done locally on device
-- **Battery Efficient**: Optimized for minimal power consumption
+WakeDrive silently monitors your face while you drive. The moment it detects signs of fatigue — drooping eyes, head nodding, reduced blink rate — it fires an alert to wake you up.
 
-## Screenshots 📱
+No internet needed. No data uploaded. Everything runs on your device.
 
-[Add screenshots of your app here]
+---
 
-## Requirements 📋
+## Features ✨
 
-- Android SDK 24 or higher
-- Android Studio Arctic Fox or newer
-- Kotlin 1.8.0 or higher
-- Device with front-facing camera
+- 🎥 **Real-time face monitoring** using ML Kit Face Detection
+- 👁️ **Eye openness tracking** — detects when eyes start closing
+- 🔄 **Head movement analysis** — catches nodding and tilting
+- 📊 **Blink rate monitoring** — abnormal blink patterns trigger alerts
+- 🔔 **3-level alert system**:
+  - **WARNING** — gentle notification + short vibration
+  - **SEVERE** — loud alarm + long vibration
+  - **CRITICAL** — continuous alarm + pulsing vibration
+- 📈 **Session statistics** — review your alertness data after each drive
+- 🔒 **100% private** — no camera data ever leaves your phone
+- 🔋 **Battery optimized** — lightweight processing, minimal drain
 
-## Installation 🔧
+---
 
-1. Clone the repository:
+## Tech Stack 🛠️
+
+| Layer | Technology |
+|---|---|
+| Language | Kotlin |
+| UI | Jetpack Compose + Material 3 |
+| Architecture | MVVM |
+| Camera | CameraX |
+| AI / ML | ML Kit Face Detection |
+| Database | Room |
+| Async | Kotlin Coroutines + Flow |
+| Storage | DataStore Preferences |
+| Min SDK | Android 7.0 (API 24) |
+
+---
+
+## Getting Started 🚀
+
+### Prerequisites
+- Android Studio Hedgehog or newer
+- Android device with a front-facing camera
+- Android 7.0 (API 24) or higher
+
+### Installation
+
+1. Clone the repository
 ```bash
-git clone https://github.com/MahalaxmiDhanai/wakedrive.git
+git clone https://github.com/MahalaxmiDhanai/safedrive.git
 ```
 
-2. Open the project in Android Studio
+2. Open in Android Studio
 
-3. Build and run the app:
+3. Let Gradle sync automatically
+
+4. Connect your Android device and click **Run**
+
+### Build from terminal
 ```bash
 ./gradlew assembleDebug
 ```
 
-## Architecture 🏗
+---
 
-The app follows MVVM (Model-View-ViewModel) architecture and uses modern Android development practices:
+## How It Works 🧠
 
-- **UI Layer**: Jetpack Compose
-- **Business Logic**: ViewModel + Coroutines
-- **ML Processing**: ML Kit Face Detection
-- **Camera**: CameraX API
-- **Concurrency**: Kotlin Coroutines + Flow
+```
+Camera Feed → ML Kit Face Detection → Drowsiness Analyzer
+     ↓
+Eye Openness + Head Rotation + Blink Rate
+     ↓
+Drowsiness Score (0.0 → 1.0)
+     ↓
+NORMAL / WARNING / SEVERE / CRITICAL
+     ↓
+Sound Alert + Vibration + Notification
+```
 
-## Dependencies 📚
+---
 
-- AndroidX Core KTX
-- Jetpack Compose
-- CameraX
-- ML Kit Face Detection
-- Kotlin Coroutines
-- Android Lifecycle Components
+## Permissions Required
 
-## Contributing 🤝
+| Permission | Reason |
+|---|---|
+| `CAMERA` | Front camera access for face detection |
+| `VIBRATE` | Vibration alerts |
+| `WAKE_LOCK` | Keep screen on while monitoring |
+| `RECORD_AUDIO` | Audio output for alarms |
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+---
 
-## Privacy Policy 🔒
+## Screenshots 📱
 
-This app does not collect or store any personal data. All face detection and drowsiness analysis is performed locally on the device. No images or data are transmitted to external servers.
+> Coming soon — run the app and add your own!
+
+---
+
+## Author 👩‍💻
+
+**Mahalaxmi Dhanai**
+
+- GitHub: [@MahalaxmiDhanai](https://github.com/MahalaxmiDhanai)
+
+---
 
 ## License 📄
 
-This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
+Copyright 2026 Mahalaxmi Dhanai
 
-## Acknowledgments 👏
-
-- Based on [AlertDrive](https://github.com/Roxonn-FutureTech/AlertDrive) by Roxonn-FutureTech (Apache 2.0)
-- ML Kit for Face Detection
-- Android CameraX team
-
-## Contact 📧
-
-Mahalaxmi Dhanai — [GitHub](https://github.com/MahalaxmiDhanai)
-
-Project Link: [https://github.com/MahalaxmiDhanai/wakedrive](https://github.com/MahalaxmiDhanai/wakedrive)
+Licensed under the Apache License, Version 2.0.
+See the [LICENSE](LICENSE) file for full details.
