@@ -8,8 +8,8 @@ import android.content.Intent
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import com.mahalaxmi.wakedrive.R
-import com.mahalaxmi.wakedrive.data.models.SessionStatistics
 import com.mahalaxmi.wakedrive.data.models.AlertLevel
+import com.mahalaxmi.wakedrive.data.models.SessionStatistics
 
 class NotificationService : Service() {
     companion object {
@@ -63,16 +63,18 @@ class NotificationService : Service() {
             .setContentText(message)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(
-                """
-                $message
-                
-                Session Statistics:
-                Total Events: ${statistics.totalEvents}
-                Drowsy Events: ${statistics.drowsyEvents}
-                Average Score: ${String.format("%.2f", statistics.averageDrowsinessScore)}
-                """.trimIndent()
-            ))
+            .setStyle(
+                NotificationCompat.BigTextStyle().bigText(
+                    """
+                    $message
+                    
+                    Session Statistics:
+                    Total Events: ${statistics.totalEvents}
+                    Drowsy Events: ${statistics.drowsyEvents}
+                    Average Score: ${String.format("%.2f", statistics.averageDrowsinessScore)}
+                    """.trimIndent()
+                )
+            )
             .build()
 
         notificationManager.notify(NOTIFICATION_ID, notification)
