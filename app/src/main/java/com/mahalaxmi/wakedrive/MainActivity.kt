@@ -7,7 +7,9 @@ import android.util.Log
 import android.util.Size
 import android.view.ViewGroup
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
@@ -15,12 +17,11 @@ import androidx.camera.view.PreviewView
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.mahalaxmi.wakedrive.ml.FaceAnalyzer
 import com.mahalaxmi.wakedrive.ui.DrowsinessViewModel
@@ -31,98 +32,54 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
 class MainActivity : ComponentActivity() {
-    private lateinit var previewView: PreviewView
     private lateinit var cameraExecutor: ExecutorService
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        previewView = PreviewView(this).apply {
-            implementationMode = PreviewView.ImplementationMode.PERFORMANCE
-            scaleType = PreviewView.ScaleType.FILL_CENTER
-            layoutParams = ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.MATCH_PARENT
-            )
-        }
-
+        
         cameraExecutor = Executors.newSingleThreadExecutor()
-        requestCameraPermission()
 
         setContent {
             WakeDriveTheme {
                 val drowsinessViewModel: DrowsinessViewModel by viewModels()
                 val drowsinessState by drowsinessViewModel.drowsinessState.collectAsState()
+                
+                var hasCameraPermission by remember {
+                    mutableStateOf(
+                        ContextCompat.checkSelfPermission(
+                            this,
+                            Manifest.permission.CAMERA
+                        ) == PackageManager.PERMISSION_GRANTED
+                    )
+                }
+                
+                val launcher = rememberLauncherForActivityResult(
+                    contract = ActivityResultContracts.RequestPermission()
+                ) { isGranted ->
+                    hasCameraPermission = isGranted
+                }
+                
+                LaunchedEffect(Unit) {
+                    if (!hasCameraPermission) {
+                        launcher.launch(Manifest.permission.CAMERA)
+                    }
+                }
 
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    MainContent(
-                        previewView = previewView,
-                        drowsinessState = drowsinessState
-                    )
+                    if (hasCameraPermission) {
+                        CameraScreen(
+                            drowsinessState = drowsinessState,
+                            drowsinessViewModel = drowsinessViewModel
+                        )
+                    } else {
+                        PermissionDeniedScreen {
+                            launcher.launch(Manifest.permission.CAMERA)
+                        }
+                    }
                 }
-            }
-        }
-    }
-
-    private fun startCamera() {
-        val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
-        val drowsinessViewModel: DrowsinessViewModel by viewModels()
-
-        cameraProviderFuture.addListener({
-            val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
-
-            val preview = Preview.Builder()
-                .setTargetResolution(Size(640, 480))
-                .build()
-
-            val imageAnalyzer = ImageAnalysis.Builder()
-                .setTargetResolution(Size(640, 480))
-                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_YUV_420_888)
-                .build()
-                .also {
-                    it.setAnalyzer(
-                        ContextCompat.getMainExecutor(this),
-                        FaceAnalyzer(drowsinessViewModel)
-                    )
-                }
-
-            val cameraSelector = CameraSelector.Builder()
-                .requireLensFacing(CameraSelector.LENS_FACING_FRONT)
-                .build()
-
-            try {
-                cameraProvider.unbindAll()
-                cameraProvider.bindToLifecycle(
-                    this,
-                    cameraSelector,
-                    preview,
-                    imageAnalyzer
-                )
-                preview.setSurfaceProvider(previewView.surfaceProvider)
-            } catch (exc: Exception) {
-                Log.e(TAG, "Use case binding failed", exc)
-            }
-        }, ContextCompat.getMainExecutor(this))
-    }
-
-    private fun requestCameraPermission() {
-        when {
-            ContextCompat.checkSelfPermission(
-                this,
-                Manifest.permission.CAMERA
-            ) == PackageManager.PERMISSION_GRANTED -> {
-                startCamera()
-            }
-            else -> {
-                ActivityCompat.requestPermissions(
-                    this,
-                    arrayOf(Manifest.permission.CAMERA),
-                    REQUEST_CODE_PERMISSIONS
-                )
             }
         }
     }
@@ -134,31 +91,147 @@ class MainActivity : ComponentActivity() {
 
     companion object {
         private const val TAG = "MainActivity"
-        private const val REQUEST_CODE_PERMISSIONS = 10
     }
 }
 
 @Composable
-fun MainContent(
-    previewView: PreviewView,
-    drowsinessState: DrowsinessState
+fun CameraScreen(
+    drowsinessState: DrowsinessState,
+    drowsinessViewModel: DrowsinessViewModel
 ) {
-    Column(modifier = Modifier.fillMaxSize()) {
-        AndroidView(
-            factory = { previewView },
-            modifier = Modifier.weight(1f)
-        )
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val lifecycleOwner = androidx.compose.ui.platform.LocalLifecycleOwner.current
+    
+    val previewView = remember {
+        PreviewView(context).apply {
+            implementationMode = PreviewView.ImplementationMode.PERFORMANCE
+            scaleType = PreviewView.ScaleType.FILL_CENTER
+        }
+    }
+    
+    LaunchedEffect(Unit) {
+        val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
+        cameraProviderFuture.addListener({
+            try {
+                val cameraProvider = cameraProviderFuture.get()
+                
+                val preview = Preview.Builder()
+                    .setTargetResolution(Size(640, 480))
+                    .build()
+                    .also {
+                        it.setSurfaceProvider(previewView.surfaceProvider)
+                    }
 
+                val imageAnalyzer = ImageAnalysis.Builder()
+                    .setTargetResolution(Size(640, 480))
+                    .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                    .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_YUV_420_888)
+                    .build()
+                    .also {
+                        it.setAnalyzer(
+                            ContextCompat.getMainExecutor(context),
+                            FaceAnalyzer(drowsinessViewModel)
+                        )
+                    }
+
+                val cameraSelector = CameraSelector.DEFAULT_FRONT_CAMERA
+
+                cameraProvider.unbindAll()
+                cameraProvider.bindToLifecycle(
+                    lifecycleOwner,
+                    cameraSelector,
+                    preview,
+                    imageAnalyzer
+                )
+            } catch (exc: Exception) {
+                Log.e("CameraScreen", "Camera initialization failed", exc)
+            }
+        }, ContextCompat.getMainExecutor(context))
+    }
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+        ) {
+            AndroidView(
+                factory = { previewView },
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = when (drowsinessState.alertLevel) {
+                    AlertLevel.CRITICAL -> MaterialTheme.colorScheme.errorContainer
+                    AlertLevel.SEVERE -> MaterialTheme.colorScheme.errorContainer
+                    AlertLevel.WARNING -> MaterialTheme.colorScheme.tertiaryContainer
+                    else -> MaterialTheme.colorScheme.primaryContainer
+                }
+            )
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = drowsinessState.message.ifEmpty { "Stay Alert!" },
+                    style = MaterialTheme.typography.titleMedium,
+                    textAlign = TextAlign.Center,
+                    color = when (drowsinessState.alertLevel) {
+                        AlertLevel.CRITICAL -> MaterialTheme.colorScheme.error
+                        AlertLevel.SEVERE -> MaterialTheme.colorScheme.error
+                        AlertLevel.WARNING -> MaterialTheme.colorScheme.onTertiaryContainer
+                        else -> MaterialTheme.colorScheme.onPrimaryContainer
+                    }
+                )
+                
+                if (drowsinessState.isDriverPresent) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Drowsiness: ${(drowsinessState.drowsinessScore * 100).toInt()}%",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun PermissionDeniedScreen(onRequestPermission: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
         Text(
-            text = drowsinessState.message,
-            style = MaterialTheme.typography.bodyLarge,
-            color = when (drowsinessState.alertLevel) {
-                AlertLevel.CRITICAL -> MaterialTheme.colorScheme.error
-                AlertLevel.SEVERE -> MaterialTheme.colorScheme.errorContainer
-                AlertLevel.WARNING -> MaterialTheme.colorScheme.tertiaryContainer
-                else -> MaterialTheme.colorScheme.onBackground
-            },
-            modifier = Modifier.padding(16.dp)
+            text = "📷",
+            style = MaterialTheme.typography.displayLarge
         )
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = "Camera Permission Required",
+            style = MaterialTheme.typography.titleLarge,
+            textAlign = TextAlign.Center
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = "WakeDrive needs camera access to monitor your face and detect drowsiness while driving.",
+            style = MaterialTheme.typography.bodyMedium,
+            textAlign = TextAlign.Center,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(modifier = Modifier.height(24.dp))
+        Button(onClick = onRequestPermission) {
+            Text("Grant Camera Permission")
+        }
     }
 }
